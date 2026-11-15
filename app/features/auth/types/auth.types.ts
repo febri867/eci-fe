@@ -13,3 +13,7 @@ export interface AuthUser {
 export interface LoginResponse {
     user: AuthUser
 }
+
+export interface MeResponse {
+    user: AuthUser
+}

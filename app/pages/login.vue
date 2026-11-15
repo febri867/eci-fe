@@ -4,20 +4,28 @@ import {useLoginForm} from "~/compasable/useLoginForm.ts";
 import {useAuth} from "~/features/auth/composables/useAuth.ts";
 import {loginSchema} from "~/features/auth/schemas/login.schema.ts";
 
+definePageMeta({
+  middleware: 'guest',
+})
+
 const {
   email,
   password,
   showPassword,
-  errorMessage,
-  isLoading,
-  validate,
 } = useLoginForm()
 
 const turnstileToken = ref('')
 
-const { login, isLoading: isLoadingAuth, setErrorMessage } = useAuth()
+const {
+  login,
+  isLoading: isLoadingAuth,
+  errorMessage,
+  setErrorMessage,
+} = useAuth()
 
 const handleSubmit = async () => {
+
+  setErrorMessage('')
   const result = loginSchema.safeParse({
     email: email.value,
     password: password.value,

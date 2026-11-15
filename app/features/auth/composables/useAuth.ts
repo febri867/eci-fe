@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { authService } from '../services/auth.service'
 import type { LoginPayload, AuthUser } from '../types/auth.types'
+import {useSnackbar} from "~/compasable/useSnackbar.ts";
 
 export const useAuth = () => {
     const user = ref<AuthUser | null>(null)
@@ -9,22 +10,50 @@ export const useAuth = () => {
     const setErrorMessage = (message: string) => {
         errorMessage.value = message
     }
+    const snackbar = useSnackbar()
 
     const login = async (payload: LoginPayload) => {
         isLoading.value = true
         errorMessage.value = ''
-
         try {
             const response = await authService.login(payload)
 
             user.value = response.user
-
+            snackbar.show('Login berhasil', 'success')
             await navigateTo('/dashboard')
         } catch (error: any) {
-            errorMessage.value =
-                error.data?.message || 'Login gagal. Periksa email dan password.'
+            const message =
+                error.data?.message ||
+                error.response?._data?.message ||
+                error.message ||
+                'Login gagal. Silakan coba kembali.'
+
+            errorMessage.value = message
+            snackbar.show(message, 'error')
         } finally {
             isLoading.value = false
+        }
+    }
+
+    const fetchUser = async () => {
+        try {
+            const response = await authService.me()
+            user.value = response.user
+        } catch {
+            user.value = null
+        }
+    }
+
+    const logout = async () => {
+        try {
+            await authService.logout()
+            snackbar.show('Logout berhasil', 'success')
+        }
+        catch {
+            snackbar.show('Logout gagal', 'error')
+        } finally {
+            user.value = null
+            await navigateTo('/login')
         }
     }
 
@@ -34,5 +63,7 @@ export const useAuth = () => {
         errorMessage,
         setErrorMessage,
         login,
+        fetchUser,
+        logout,
     }
 }
