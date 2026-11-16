@@ -110,6 +110,8 @@ const features = [
 <style scoped>
 
 .dashboard {
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
   padding: 24px;
   background:
@@ -393,6 +395,36 @@ const features = [
   .feature-card {
     min-height: 180px;
   }
+}
+
+main.dashboard {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  width: 100% !important;
+  min-height: 100vh;
+}
+
+main.dashboard > .dashboard-header,
+main.dashboard > .hero,
+main.dashboard > .dashboard-content,
+main.dashboard > .dashboard-footer {
+  position: relative;
+  flex: 0 0 auto !important;
+  width: 100%;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+main.dashboard > .dashboard-header {
+  justify-content: space-between;
+}
+
+main.dashboard > .hero {
+  margin-top: 12px;
+  margin-bottom: 36px;
 }
 
 </style>
