@@ -42,7 +42,6 @@ const regionError = ref('')
 
 const formatRupiah = (value: number) => {
   if (!value) return ''
-
   return new Intl.NumberFormat('id-ID').format(value)
 }
 
@@ -75,6 +74,32 @@ const loadProvinces = async () => {
   }
 }
 
+const loadCities = async (provinceId: string) => {
+  isLoadingCities.value = true
+  regionError.value = ''
+
+  try {
+    cities.value = await regionService.getCities(provinceId)
+  } catch {
+    regionError.value = 'Gagal memuat data kota'
+  } finally {
+    isLoadingCities.value = false
+  }
+}
+
+const loadDistricts = async (cityId: string) => {
+  isLoadingDistricts.value = true
+  regionError.value = ''
+
+  try {
+    districts.value = await regionService.getDistricts(cityId)
+  } catch {
+    regionError.value = 'Gagal memuat data kecamatan'
+  } finally {
+    isLoadingDistricts.value = false
+  }
+}
+
 const handleProvinceChange = async () => {
   form.province = provinces.value.find(
       item => item.id === selectedProvinceId.value,
@@ -88,15 +113,7 @@ const handleProvinceChange = async () => {
 
   if (!selectedProvinceId.value) return
 
-  isLoadingCities.value = true
-
-  try {
-    cities.value = await regionService.getCities(selectedProvinceId.value)
-  } catch {
-    regionError.value = 'Gagal memuat data kota'
-  } finally {
-    isLoadingCities.value = false
-  }
+  await loadCities(selectedProvinceId.value)
 }
 
 const handleCityChange = async () => {
@@ -109,15 +126,7 @@ const handleCityChange = async () => {
 
   if (!selectedCityId.value) return
 
-  isLoadingDistricts.value = true
-
-  try {
-    districts.value = await regionService.getDistricts(selectedCityId.value)
-  } catch {
-    regionError.value = 'Gagal memuat data kecamatan'
-  } finally {
-    isLoadingDistricts.value = false
-  }
+  await loadDistricts(selectedCityId.value)
 }
 
 const handleDistrictChange = (event: Event) => {
@@ -140,7 +149,7 @@ const initializeRegions = async () => {
   if (!province) return
 
   selectedProvinceId.value = province.id
-  await handleProvinceInitialization(province.id)
+  await loadCities(province.id)
 
   const city = cities.value.find(
       item => item.name === props.initialData?.city,
@@ -149,7 +158,7 @@ const initializeRegions = async () => {
   if (!city) return
 
   selectedCityId.value = city.id
-  await handleCityInitialization(city.id)
+  await loadDistricts(city.id)
 
   const district = districts.value.find(
       item => item.name === props.initialData?.district,
@@ -157,30 +166,6 @@ const initializeRegions = async () => {
 
   if (district) {
     form.district = district.name
-  }
-}
-
-const handleProvinceInitialization = async (provinceId: string) => {
-  isLoadingCities.value = true
-
-  try {
-    cities.value = await regionService.getCities(provinceId)
-  } catch {
-    regionError.value = 'Gagal memuat data kota'
-  } finally {
-    isLoadingCities.value = false
-  }
-}
-
-const handleCityInitialization = async (cityId: string) => {
-  isLoadingDistricts.value = true
-
-  try {
-    districts.value = await regionService.getDistricts(cityId)
-  } catch {
-    regionError.value = 'Gagal memuat data kecamatan'
-  } finally {
-    isLoadingDistricts.value = false
   }
 }
 
@@ -251,15 +236,13 @@ onMounted(initializeRegions)
 
       <div>
         <label class="form-label">Salary <span>*</span></label>
-
         <div class="flex items-center overflow-hidden rounded-lg border border-slate-200 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
-    <span
-        v-if="salaryDisplay"
-        class="shrink-0 pl-3 text-sm font-medium text-slate-500"
-    >
-      Rp
-    </span>
-
+          <span
+              v-if="salaryDisplay"
+              class="shrink-0 pl-3 text-sm font-medium text-slate-500"
+          >
+            Rp
+          </span>
           <input
               :value="salaryDisplay"
               type="text"
@@ -271,10 +254,7 @@ onMounted(initializeRegions)
               @input="handleSalaryInput"
           >
         </div>
-
-        <p v-if="errors.salary" class="form-error">
-          {{ errors.salary }}
-        </p>
+        <p v-if="errors.salary" class="form-error">{{ errors.salary }}</p>
       </div>
 
       <div>

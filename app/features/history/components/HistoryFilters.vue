@@ -56,6 +56,8 @@ const resetFilters = () => {
           <option value="CREATE_EMPLOYEE">Create Employee</option>
           <option value="UPDATE_EMPLOYEE">Update Employee</option>
           <option value="DELETE_EMPLOYEE">Delete Employee</option>
+          <option value="GENERATE_STAR_PATTERN">Generate Star Pattern</option>
+          <option value="GENERATE_NUMBER_TO_WORDS">Generate Number to Words</option>
         </select>
       </div>
 

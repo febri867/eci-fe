@@ -1,9 +1,11 @@
+
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
 import { useEmployees } from '~/features/employee/composables/useEmployees.ts'
-import EmployeeFilters from "~/features/employee/components/EmployeeFilters.vue";
+import EmployeeFilters from '~/features/employee/components/EmployeeFilters.vue'
 import { employeeService } from '~/features/employee/services/employee.service'
-import {useSnackbar} from "~/compasable/useSnackbar.ts";
+import { useSnackbar } from '~/compasable/useSnackbar.ts'
+import ConfirmDialog from '~/components/ui/ConfirmDialog.vue'
 
 definePageMeta({
   middleware: 'auth',
@@ -31,12 +33,54 @@ const handleSearch = () => {
   })
 }
 
-onMounted(async () => {
-  await loadEmployees(true)
+const snackbar = useSnackbar()
+const deletingId = ref<string | null>(null)
+const showDeleteDialog = ref(false)
 
+const selectedEmployee = ref<{
+  id: string
+  name: string
+} | null>(null)
+
+const handleDelete = (id: string, name: string) => {
+  selectedEmployee.value = { id, name }
+  showDeleteDialog.value = true
+}
+
+const confirmDelete = async () => {
+  if (!selectedEmployee.value) return
+
+  const { id } = selectedEmployee.value
+
+  deletingId.value = id
+
+  try {
+    await employeeService.delete(id)
+
+    snackbar.show('Employee deleted successfully', 'success')
+
+    showDeleteDialog.value = false
+    selectedEmployee.value = null
+
+    await loadEmployees(true)
+  } catch (error: any) {
+    snackbar.show(
+        error?.data?.message || 'Failed to delete employee',
+        'error',
+    )
+  } finally {
+    deletingId.value = null
+  }
+}
+
+onMounted(async () => {
   observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0]?.isIntersecting && hasMore.value) {
+        if (
+            entries[0]?.isIntersecting &&
+            hasMore.value &&
+            !isLoadingMore.value
+        ) {
           loadMore()
         }
       },
@@ -46,33 +90,13 @@ onMounted(async () => {
   if (observerTarget.value) {
     observer.observe(observerTarget.value)
   }
+
+  await loadEmployees(true)
 })
 
 onUnmounted(() => {
   observer?.disconnect()
 })
-
-const snackbar = useSnackbar()
-const deletingId = ref<string | null>(null)
-
-const handleDelete = async (id: string, name: string) => {
-  if (!confirm(`Are you sure you want to delete ${name}?`)) return
-
-  deletingId.value = id
-
-  try {
-    await employeeService.delete(id)
-    snackbar.show('Employee deleted successfully', 'success')
-    await loadEmployees(true)
-  } catch (error: any) {
-    snackbar.show(
-        error.data?.message || 'Failed to delete employee',
-        'error',
-    )
-  } finally {
-    deletingId.value = null
-  }
-}
 </script>
 
 <template>
@@ -83,6 +107,7 @@ const handleDelete = async (id: string, name: string) => {
           <h1 class="text-2xl font-bold text-slate-900">
             Employee Management
           </h1>
+
           <p class="mt-1 text-sm text-slate-500">
             Manage employee information
           </p>
@@ -90,11 +115,12 @@ const handleDelete = async (id: string, name: string) => {
 
         <NuxtLink
             to="/dashboard"
-            class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700"
+            class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
         >
           Dashboard
         </NuxtLink>
       </div>
+
       <div class="mb-5 flex flex-col gap-3 sm:flex-row">
         <NuxtLink
             to="/employees/create"
@@ -103,29 +129,40 @@ const handleDelete = async (id: string, name: string) => {
           + Add Employee
         </NuxtLink>
       </div>
+
       <EmployeeFilters @apply="applyFilters" />
+
       <div
           v-if="errorMessage"
           class="mb-4 rounded-xl bg-red-50 p-4 text-sm text-red-600"
       >
         {{ errorMessage }}
       </div>
+
       <div
           v-if="isLoading"
           class="rounded-xl bg-white p-8 text-center text-slate-500"
       >
         Loading employees...
       </div>
+
       <div
           v-else-if="employees.length === 0"
           class="rounded-xl bg-white p-10 text-center"
       >
-        <p class="font-medium text-slate-700">No employees found</p>
+        <p class="font-medium text-slate-700">
+          No employees found
+        </p>
+
         <p class="mt-1 text-sm text-slate-500">
           Try another search keyword.
         </p>
       </div>
-      <div v-else class="overflow-hidden rounded-xl border border-slate-200 bg-white">
+
+      <div
+          v-else
+          class="overflow-hidden rounded-xl border border-slate-200 bg-white"
+      >
         <div class="hidden overflow-x-auto md:block">
           <table class="w-full text-left text-sm">
             <thead class="bg-slate-100 text-slate-600">
@@ -135,7 +172,7 @@ const handleDelete = async (id: string, name: string) => {
               <th class="px-5 py-4 font-semibold">Grade</th>
               <th class="px-5 py-4 font-semibold">City</th>
               <th class="px-5 py-4 font-semibold">Salary</th>
-              <th class="px-5 py-4 font-semibold text-right">Actions</th>
+              <th class="px-5 py-4 text-right font-semibold">Actions</th>
             </tr>
             </thead>
 
@@ -148,20 +185,27 @@ const handleDelete = async (id: string, name: string) => {
               <td class="px-5 py-4 font-medium text-slate-900">
                 {{ employee.name }}
               </td>
+
               <td class="px-5 py-4 text-slate-600">
                 {{ employee.position }}
               </td>
+
               <td class="px-5 py-4">
-                  <span class="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                  <span
+                      class="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700"
+                  >
                     {{ employee.grade }}
                   </span>
               </td>
+
               <td class="px-5 py-4 text-slate-600">
                 {{ employee.city }}
               </td>
+
               <td class="px-5 py-4 text-slate-600">
                 {{ employee.salary.toLocaleString('id-ID') }}
               </td>
+
               <td class="px-5 py-4 text-right">
                 <div class="flex justify-end gap-2">
                   <NuxtLink
@@ -172,6 +216,7 @@ const handleDelete = async (id: string, name: string) => {
                   </NuxtLink>
 
                   <button
+                      type="button"
                       :disabled="deletingId === employee.id"
                       class="rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-100 disabled:opacity-50"
                       @click="handleDelete(employee.id, employee.name)"
@@ -184,6 +229,7 @@ const handleDelete = async (id: string, name: string) => {
             </tbody>
           </table>
         </div>
+
         <div class="divide-y divide-slate-100 md:hidden">
           <div
               v-for="employee in employees"
@@ -195,18 +241,24 @@ const handleDelete = async (id: string, name: string) => {
                 <p class="font-semibold text-slate-900">
                   {{ employee.name }}
                 </p>
+
                 <p class="mt-1 text-sm text-slate-500">
                   {{ employee.position }}
                 </p>
               </div>
 
-              <span class="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+              <span
+                  class="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700"
+              >
                 {{ employee.grade }}
               </span>
             </div>
 
             <div class="mt-3 flex justify-between text-sm">
-              <span class="text-slate-500">{{ employee.city }}</span>
+              <span class="text-slate-500">
+                {{ employee.city }}
+              </span>
+
               <span class="font-medium text-slate-700">
                 Rp {{ employee.salary.toLocaleString('id-ID') }}
               </span>
@@ -221,6 +273,7 @@ const handleDelete = async (id: string, name: string) => {
               </NuxtLink>
 
               <button
+                  type="button"
                   :disabled="deletingId === employee.id"
                   class="flex-1 rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-600 disabled:opacity-50"
                   @click="handleDelete(employee.id, employee.name)"
@@ -231,15 +284,28 @@ const handleDelete = async (id: string, name: string) => {
           </div>
         </div>
       </div>
+
       <div
           ref="observerTarget"
           class="py-6 text-center text-sm text-slate-500"
       >
-        <span v-if="isLoadingMore">Loading more employees...</span>
+        <span v-if="isLoadingMore">
+          Loading more employees...
+        </span>
+
         <span v-else-if="!hasMore && employees.length > 0">
           All employees loaded
         </span>
       </div>
     </div>
+
+    <ConfirmDialog
+        v-model="showDeleteDialog"
+        title="Delete Employee"
+        :message="`Are you sure you want to delete ${selectedEmployee?.name}? This action cannot be undone.`"
+        confirm-text="Delete Employee"
+        :loading="deletingId !== null"
+        @confirm="confirmDelete"
+    />
   </main>
 </template>

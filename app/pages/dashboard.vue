@@ -16,7 +16,7 @@ const features = [
   {
     title: 'Terbilang',
     description: 'Konversi angka menjadi tulisan Rupiah.',
-    path: '/terbilang',
+    path: '/number-to-words',
   },
   {
     title: 'Star Pattern',

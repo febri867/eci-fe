@@ -1,26 +1,29 @@
-import type { RegionApiResponse } from '../types/region.types'
-
-const BASE_URL = 'https://www.emsifa.com/api-wilayah-indonesia/v2'
+import { useApi } from '~/compasable/useApi'
+import type { Region, RegionApiResponse } from '../types/region.types'
 
 export const regionService = {
-    async getProvinces() {
-        const response = await $fetch<RegionApiResponse>(
-            `${BASE_URL}/provinces.json`,
-        )
+    async getProvinces(): Promise<Region[]> {
+        const api = useApi()
+        const response = await api<RegionApiResponse>('/regions/provinces')
+
         return response.data
     },
 
-    async getCities(provinceId: string) {
-        const response = await $fetch<RegionApiResponse>(
-            `${BASE_URL}/regencies/${provinceId}.json`,
+    async getCities(provinceId: string): Promise<Region[]> {
+        const api = useApi()
+        const response = await api<RegionApiResponse>(
+            `/regions/provinces/${provinceId}/cities`,
         )
+
         return response.data
     },
 
-    async getDistricts(cityId: string) {
-        const response = await $fetch<RegionApiResponse>(
-            `${BASE_URL}/districts/${cityId}.json`,
+    async getDistricts(cityId: string): Promise<Region[]> {
+        const api = useApi()
+        const response = await api<RegionApiResponse>(
+            `/regions/cities/${cityId}/districts`,
         )
+
         return response.data
     },
 }
