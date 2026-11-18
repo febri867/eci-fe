@@ -13,4 +13,9 @@ export default defineNuxtConfig({
       apiBaseUrl: '',
     },
   },
+  routeRules: {
+    '/api/**': {
+      proxy: 'https://eci-be.onrender.com/api/**',
+    },
+  },
 })
