@@ -4,9 +4,9 @@ import type { LoginPayload, AuthUser } from '../types/auth.types'
 import {useSnackbar} from "~/compasable/useSnackbar.ts";
 
 export const useAuth = () => {
-    const user = ref<AuthUser | null>(null)
-    const isLoading = ref(false)
-    const errorMessage = ref('')
+    const user = useState<AuthUser | null>('auth:user', () => null)
+    const isLoading = useState<boolean>('auth:loading', () => false)
+    const errorMessage = useState<string>('auth:error', () => '')
     const setErrorMessage = (message: string) => {
         errorMessage.value = message
     }
